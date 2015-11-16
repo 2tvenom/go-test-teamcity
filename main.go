@@ -47,29 +47,29 @@ func main() {
 
 		runOut := run.FindStringSubmatch(line)
 		if runOut != nil {
-			fmt.Fprintf(output, "##teamcity[testStarted timestamp='%s' name='%s']\n", additionalTestName + runOut[1],
-				now)
+			fmt.Fprintf(output, "##teamcity[testStarted timestamp='%s' name='%s']\n", now,
+				additionalTestName + runOut[1])
 			continue
 		}
 
 		passOut := pass.FindStringSubmatch(line)
 		if passOut != nil {
-			fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", additionalTestName + passOut[1],
-				now)
+			fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now,
+				additionalTestName + passOut[1])
 			continue
 		}
 
 		skipOut := skip.FindStringSubmatch(line)
 		if skipOut != nil {
-			fmt.Fprintf(output, "##teamcity[testIgnored timestamp='%s' name='%s']\n", additionalTestName + skipOut[1],
-				now)
+			fmt.Fprintf(output, "##teamcity[testIgnored timestamp='%s' name='%s']\n", now,
+				additionalTestName + skipOut[1])
 			continue
 		}
 
 		failOut := fail.FindStringSubmatch(line)
 		if failOut != nil {
-			fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s']\n", additionalTestName + failOut[1],
-				now)
+			fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s']\n", now,
+				additionalTestName + failOut[1])
 			continue
 		}
 

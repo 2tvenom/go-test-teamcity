@@ -26,13 +26,14 @@ var (
 )
 func init() {
 	flag.StringVar(&additionalTestName, "name", "", "Add prefix to test name")
-	if len(additionalTestName) > 0 {
-		additionalTestName += " "
-	}
 }
 
 func main() {
 	flag.Parse()
+
+	if len(additionalTestName) > 0 {
+		additionalTestName += " "
+	}
 
 	reader := bufio.NewReader(input)
 

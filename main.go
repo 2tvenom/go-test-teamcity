@@ -38,7 +38,7 @@ func main() {
 
 		runOut := run.FindStringSubmatch(line)
 		if runOut != nil {
-			fmt.Fprintf(output, "##teamcity[timestamp='%s' testStarted name='%s' captureStandardOutput='true']\n", now,
+			fmt.Fprintf(output, "##teamcity[timestamp='%s' testStarted name='%s']\n", now,
 				additionalTestName + runOut[1])
 			continue
 		}

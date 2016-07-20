@@ -61,9 +61,11 @@ func main() {
 				if test.Fail {
 					fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s' details='%s']\n", now,
 						testName, strings.Join(out, "|n"))
+					fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, testName)
 				} else if test.Race {
 					fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s' message='Race detected!' details='%s']\n", now,
 						testName, test.Output)
+					fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, testName)
 				} else if test.Skip {
 					fmt.Fprintf(output, "##teamcity[testIgnored timestamp='%s' name='%s']\n", now, testName)
 				} else if test.Pass {

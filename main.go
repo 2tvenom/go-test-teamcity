@@ -1,29 +1,35 @@
 package main
 
 import (
-	"os"
 	"bufio"
-	"regexp"
-	"fmt"
-	"time"
 	"flag"
+	"fmt"
+	"os"
+	"regexp"
+	"strings"
+	"time"
 )
 
 const (
 	TEAMCITY_TIMESTAMP_FORMAT = "2006-01-02T15:04:05.000"
 )
 
+type Test struct {
+	Name, Output           string
+	Race, Fail, Skip, Pass bool
+}
+
 var (
-	input = os.Stdin
+	input  = os.Stdin
 	output = os.Stdout
 
 	additionalTestName = ""
 
-	run = regexp.MustCompile("=== RUN\\s+(\\w+)")
-	pass = regexp.MustCompile("--- PASS:\\s+(\\w+) \\(([\\.\\d]+)s\\)")
-	skip = regexp.MustCompile("--- SKIP:\\s+(\\w+)\\s+\\(([\\.\\d]+)s\\)")
-	fail = regexp.MustCompile("--- FAIL:\\s+(\\w+)\\s+\\(([\\.\\d]+)s\\)")
+	run  = regexp.MustCompile("=== RUN\\s+(\\w+)")
+	end  = regexp.MustCompile("--- (PASS|SKIP|FAIL):\\s+(\\w+) \\(([\\.\\d]+)s\\)")
+	race = regexp.MustCompile("^WARNING: DATA RACE")
 )
+
 func init() {
 	flag.StringVar(&additionalTestName, "name", "", "Add prefix to test name")
 }
@@ -37,6 +43,8 @@ func main() {
 
 	reader := bufio.NewReader(input)
 
+	var out []string
+	var test *Test
 	for {
 		line, err := reader.ReadString('\n')
 
@@ -48,31 +56,49 @@ func main() {
 
 		runOut := run.FindStringSubmatch(line)
 		if runOut != nil {
+			if test != nil {
+				var testName = additionalTestName + test.Name
+				if test.Fail {
+					fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s' details='%s']\n", now,
+						testName, strings.Join(out, "|n"))
+				} else if test.Race {
+					fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s' message='Race detected!' details='%s']\n", now,
+						testName, test.Output)
+				} else if test.Skip {
+					fmt.Fprintf(output, "##teamcity[testIgnored timestamp='%s' name='%s']\n", now, testName)
+				} else if test.Pass {
+					fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, testName)
+				}
+			}
 			fmt.Fprintf(output, "##teamcity[testStarted timestamp='%s' name='%s']\n", now,
-				additionalTestName + runOut[1])
+				additionalTestName+runOut[1])
+
+			test = &Test{Name: runOut[1]}
+			out = []string{}
 			continue
 		}
 
-		passOut := pass.FindStringSubmatch(line)
-		if passOut != nil {
-			fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now,
-				additionalTestName + passOut[1])
+		endOut := end.FindStringSubmatch(line)
+		if endOut != nil {
+			if endOut[1] == "FAIL" {
+				test.Fail = true
+			} else if endOut[1] == "SKIP" {
+				test.Skip = true
+			} else if endOut[1] == "PASS" {
+				test.Pass = true
+			}
+			test.Name = endOut[2]
+			test.Output = strings.Join(out, "|n")
+			out = []string{}
 			continue
 		}
 
-		skipOut := skip.FindStringSubmatch(line)
-		if skipOut != nil {
-			fmt.Fprintf(output, "##teamcity[testIgnored timestamp='%s' name='%s']\n", now,
-				additionalTestName + skipOut[1])
-			continue
+		if race.MatchString(line) {
+			if test != nil {
+				test.Race = true
+			}
 		}
-
-		failOut := fail.FindStringSubmatch(line)
-		if failOut != nil {
-			fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s']\n", now,
-				additionalTestName + failOut[1])
-			continue
-		}
+		out = append(out, line[:len(line)-1])
 
 		fmt.Fprint(output, line)
 	}

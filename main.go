@@ -25,9 +25,10 @@ var (
 
 	additionalTestName = ""
 
-	run  = regexp.MustCompile("=== RUN\\s+(\\w+)")
-	end  = regexp.MustCompile("--- (PASS|SKIP|FAIL):\\s+(\\w+) \\(([\\.\\d]+)s\\)")
-	race = regexp.MustCompile("^WARNING: DATA RACE")
+	run   = regexp.MustCompile("=== RUN\\s+(\\w+)")
+	end   = regexp.MustCompile("--- (PASS|SKIP|FAIL):\\s+(\\w+) \\(([\\.\\d]+)s\\)")
+	suite = regexp.MustCompile("^(ok|FAIL)\\w+(\\s+)\\w+([\\.\\d]+)s")
+	race  = regexp.MustCompile("^WARNING: DATA RACE")
 )
 
 func init() {
@@ -93,6 +94,15 @@ func main() {
 			test.Output = strings.Join(out, "|n")
 			out = []string{}
 			continue
+		}
+
+		suiteOut := suite.FindStringSubmatch(line)
+		if suiteOut != nil {
+			if test != nil {
+				fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s' message='Test ended in panic.' details='%s']\n", now,
+					test.Name, test.Output)
+				fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, test.Name)
+			}
 		}
 
 		if race.MatchString(line) {

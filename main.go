@@ -100,8 +100,8 @@ func main() {
 		if suiteOut != nil {
 			if test != nil {
 				fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s' message='Test ended in panic.' details='%s']\n", now,
-					testName, test.Output)
-				fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, testName)
+					test.Name, test.Output)
+				fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, test.Name)
 			}
 		}
 

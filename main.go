@@ -35,6 +35,15 @@ func init() {
 	flag.StringVar(&additionalTestName, "name", "", "Add prefix to test name")
 }
 
+func escapeOutput(outputLines []string) string {
+	newOutput := strings.Join(outputLines, "|n")
+	newOutput = strings.Replace(newOutput, "|", "||", -1)
+	newOutput = strings.Replace(newOutput, "'", "|'", -1)
+	newOutput = strings.Replace(newOutput, "]", "|]", -1)
+	newOutput = strings.Replace(newOutput, "[", "|[", -1)
+	return newOutput
+}
+
 func main() {
 	flag.Parse()
 
@@ -61,7 +70,7 @@ func main() {
 				var testName = additionalTestName + test.Name
 				if test.Fail {
 					fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s' details='%s']\n", now,
-						testName, strings.Join(out, "|n"))
+						testName, escapeOutput(out))
 					fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, testName)
 				} else if test.Race {
 					fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s' message='Race detected!' details='%s']\n", now,
@@ -91,7 +100,7 @@ func main() {
 				test.Pass = true
 			}
 			test.Name = endOut[2]
-			test.Output = strings.Join(out, "|n")
+			test.Output = escapeOutput(out)
 			out = []string{}
 			continue
 		}

@@ -27,7 +27,7 @@ var (
 
 	run   = regexp.MustCompile("=== RUN\\s+(\\w+)")
 	end   = regexp.MustCompile("--- (PASS|SKIP|FAIL):\\s+(\\w+) \\(([\\.\\d]+)s\\)")
-	suite = regexp.MustCompile("^(ok|FAIL)\\w+(\\s+)\\w+([\\.\\d]+)s")
+	suite = regexp.MustCompile("^(ok|FAIL)\\s+([^\\s]+)\\s+([\\.\\d]+)s")
 	race  = regexp.MustCompile("^WARNING: DATA RACE")
 )
 

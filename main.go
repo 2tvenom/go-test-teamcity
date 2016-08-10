@@ -25,8 +25,8 @@ var (
 
 	additionalTestName = ""
 
-	run   = regexp.MustCompile("=== RUN\\s+(\\w+)")
-	end   = regexp.MustCompile("--- (PASS|SKIP|FAIL):\\s+(\\w+) \\(([\\.\\d]+)")
+	run   = regexp.MustCompile("=== RUN\\s+([a-zA-Z_]\\S*)")
+	end   = regexp.MustCompile("--- (PASS|SKIP|FAIL):\\s+([a-zA-Z_]\\S*) \\(([\\.\\d]+)")
 	suite = regexp.MustCompile("^(ok|FAIL)\\s+([^\\s]+)\\s+([\\.\\d]+)s")
 	race  = regexp.MustCompile("^WARNING: DATA RACE")
 )
@@ -111,6 +111,10 @@ func main() {
 			}
 			test.Name = endOut[2]
 			test.Output = escapeOutput(out)
+			if test.Pass || test.Skip {
+				outputTest(test, out)
+				test = nil
+			}
 			out = []string{}
 			continue
 		}
@@ -120,6 +124,7 @@ func main() {
 			if test != nil {
 				outputTest(test, out)
 				out = []string{}
+				test = nil
 				continue
 			}
 		}

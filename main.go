@@ -101,7 +101,7 @@ func main() {
 		}
 
 		endOut := end.FindStringSubmatch(line)
-		if endOut != nil {
+		if endOut != nil && test != nil {
 			if endOut[1] == "FAIL" {
 				test.Fail = true
 			} else if endOut[1] == "SKIP" {
@@ -137,5 +137,8 @@ func main() {
 		out = append(out, line[:len(line)-1])
 
 		fmt.Fprint(output, line)
+	}
+	if test != nil {
+		outputTest(test, out)
 	}
 }

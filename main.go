@@ -90,6 +90,10 @@ func main() {
 		runOut := run.FindStringSubmatch(line)
 		if runOut != nil {
 			if test != nil {
+				if strings.HasPrefix(runOut[1], test.Name+"/") {
+					// Just ignore subtests.
+					continue
+				}
 				outputTest(test, out)
 			}
 			fmt.Fprintf(output, "##teamcity[testStarted timestamp='%s' name='%s']\n", now,

@@ -39,6 +39,7 @@ func escapeOutput(outputLines []string) string {
 	newOutput := strings.Join(outputLines, "\n")
 	newOutput = strings.Replace(newOutput, "|", "||", -1)
 	newOutput = strings.Replace(newOutput, "\n", "|n", -1)
+	newOutput = strings.Replace(newOutput, "\r", "|n", -1)
 	newOutput = strings.Replace(newOutput, "'", "|'", -1)
 	newOutput = strings.Replace(newOutput, "]", "|]", -1)
 	newOutput = strings.Replace(newOutput, "[", "|[", -1)

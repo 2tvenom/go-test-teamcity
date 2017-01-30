@@ -26,8 +26,8 @@ var (
 	additionalTestName = ""
 
 	run   = regexp.MustCompile("=== RUN\\s+([a-zA-Z_]\\S*)")
-	end   = regexp.MustCompile("--- (PASS|SKIP|FAIL):\\s+([a-zA-Z_]\\S*) \\(([\\.\\d]+)")
-	suite = regexp.MustCompile("^(ok|FAIL)\\s+([^\\s]+)\\s+([\\.\\d]+)s")
+	end   = regexp.MustCompile("--- (PASS|SKIP|FAIL):\\s+([a-zA-Z_]\\S*) \\((-?[\\.\\d]+)")
+	suite = regexp.MustCompile("^(ok|FAIL)\\s+([^\\s]+)\\s+(-?[\\.\\d]+)s")
 	race  = regexp.MustCompile("^WARNING: DATA RACE")
 )
 

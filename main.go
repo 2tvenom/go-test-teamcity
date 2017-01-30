@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -26,8 +27,8 @@ var (
 	additionalTestName = ""
 
 	run   = regexp.MustCompile("=== RUN\\s+([a-zA-Z_]\\S*)")
-	end   = regexp.MustCompile("--- (PASS|SKIP|FAIL):\\s+([a-zA-Z_]\\S*) \\(([\\.\\d]+)")
-	suite = regexp.MustCompile("^(ok|FAIL)\\s+([^\\s]+)\\s+([\\.\\d]+)s")
+	end   = regexp.MustCompile("--- (PASS|SKIP|FAIL):\\s+([a-zA-Z_]\\S*) \\((-?[\\.\\d]+)")
+	suite = regexp.MustCompile("^(ok|FAIL)\\s+([^\\s]+)\\s+(-?[\\.\\d]+)s")
 	race  = regexp.MustCompile("^WARNING: DATA RACE")
 )
 
@@ -46,41 +47,33 @@ func escapeOutput(outputLines []string) string {
 	return newOutput
 }
 
-func outputTest(test *Test, out []string) {
+func outputTest(w io.Writer, test *Test, out []string) {
 	now := time.Now().Format(TEAMCITY_TIMESTAMP_FORMAT)
 	var testName = additionalTestName + test.Name
 	if test.Fail {
-		fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s' details='%s']\n", now,
+		fmt.Fprintf(w, "##teamcity[testFailed timestamp='%s' name='%s' details='%s']\n", now,
 			testName, escapeOutput(out))
-		fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, testName)
+		fmt.Fprintf(w, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, testName)
 	} else if test.Race {
-		fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s' message='Race detected!' details='%s']\n", now,
+		fmt.Fprintf(w, "##teamcity[testFailed timestamp='%s' name='%s' message='Race detected!' details='%s']\n", now,
 			testName, test.Output)
-		fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, testName)
+		fmt.Fprintf(w, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, testName)
 	} else if test.Skip {
-		fmt.Fprintf(output, "##teamcity[testIgnored timestamp='%s' name='%s']\n", now, testName)
+		fmt.Fprintf(w, "##teamcity[testIgnored timestamp='%s' name='%s']\n", now, testName)
 	} else if test.Pass {
-		fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, testName)
+		fmt.Fprintf(w, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, testName)
 	} else {
-		fmt.Fprintf(output, "##teamcity[testFailed timestamp='%s' name='%s' message='Test ended in panic.' details='%s']\n", now,
+		fmt.Fprintf(w, "##teamcity[testFailed timestamp='%s' name='%s' message='Test ended in panic.' details='%s']\n", now,
 			test.Name, escapeOutput(out))
-		fmt.Fprintf(output, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, test.Name)
+		fmt.Fprintf(w, "##teamcity[testFinished timestamp='%s' name='%s']\n", now, test.Name)
 	}
 }
 
-func main() {
-	flag.Parse()
-
-	if len(additionalTestName) > 0 {
-		additionalTestName += " "
-	}
-
-	reader := bufio.NewReader(input)
-
+func processReader(r *bufio.Reader, w io.Writer) {
 	var out []string
 	var test *Test
 	for {
-		line, err := reader.ReadString('\n')
+		line, err := r.ReadString('\n')
 
 		if err != nil {
 			break
@@ -95,9 +88,9 @@ func main() {
 					// Just ignore subtests.
 					continue
 				}
-				outputTest(test, out)
+				outputTest(w, test, out)
 			}
-			fmt.Fprintf(output, "##teamcity[testStarted timestamp='%s' name='%s']\n", now,
+			fmt.Fprintf(w, "##teamcity[testStarted timestamp='%s' name='%s']\n", now,
 				additionalTestName+runOut[1])
 
 			test = &Test{Name: runOut[1]}
@@ -117,7 +110,7 @@ func main() {
 			test.Name = endOut[2]
 			test.Output = escapeOutput(out)
 			if test.Pass || test.Skip {
-				outputTest(test, out)
+				outputTest(w, test, out)
 				test = nil
 			}
 			out = []string{}
@@ -127,7 +120,7 @@ func main() {
 		suiteOut := suite.FindStringSubmatch(line)
 		if suiteOut != nil {
 			if test != nil {
-				outputTest(test, out)
+				outputTest(w, test, out)
 				out = []string{}
 				test = nil
 				continue
@@ -141,9 +134,21 @@ func main() {
 		}
 		out = append(out, line[:len(line)-1])
 
-		fmt.Fprint(output, line)
+		fmt.Fprint(w, line)
 	}
 	if test != nil {
-		outputTest(test, out)
+		outputTest(w, test, out)
 	}
+}
+
+func main() {
+	flag.Parse()
+
+	if len(additionalTestName) > 0 {
+		additionalTestName += " "
+	}
+
+	reader := bufio.NewReader(input)
+
+	processReader(reader, output)
 }

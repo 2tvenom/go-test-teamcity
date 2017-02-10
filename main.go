@@ -118,15 +118,16 @@ func processReader(r *bufio.Reader, w io.Writer) {
 			test.Duration, _ = time.ParseDuration(endOut[4])
 		} else if suiteOut != nil {
 			final += line
-			// ignore
 		} else if race.MatchString(line) {
 			test.Race = true
-		} else if test.Status != "" && strings.HasPrefix(line, prefix) {
+		} else if test != nil && test.Status != "" && strings.HasPrefix(line, prefix) {
 			line = line[:len(line)-1]
 			line = strings.TrimPrefix(line, prefix)
 			test.Details = append(test.Details, line)
-		} else {
+		} else if test != nil {
 			test.Output += line
+		} else {
+			fmt.Fprint(w, line)
 		}
 	}
 	if test != nil {

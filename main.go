@@ -41,15 +41,18 @@ func init() {
 	flag.StringVar(&additionalTestName, "name", "", "Add prefix to test name")
 }
 
-func escapeOutput(outputLines []string) string {
-	newOutput := strings.Join(outputLines, "\n")
-	newOutput = strings.Replace(newOutput, "|", "||", -1)
-	newOutput = strings.Replace(newOutput, "\n", "|n", -1)
-	newOutput = strings.Replace(newOutput, "\r", "|n", -1)
-	newOutput = strings.Replace(newOutput, "'", "|'", -1)
-	newOutput = strings.Replace(newOutput, "]", "|]", -1)
-	newOutput = strings.Replace(newOutput, "[", "|[", -1)
-	return newOutput
+func escapeLines(lines []string) string {
+	return escape(strings.Join(lines, "\n"))
+}
+
+func escape(s string) string {
+	s = strings.Replace(s, "|", "||", -1)
+	s = strings.Replace(s, "\n", "|n", -1)
+	s = strings.Replace(s, "\r", "|n", -1)
+	s = strings.Replace(s, "'", "|'", -1)
+	s = strings.Replace(s, "]", "|]", -1)
+	s = strings.Replace(s, "[", "|[", -1)
+	return s
 }
 
 func getNow() string {
@@ -58,7 +61,7 @@ func getNow() string {
 
 func outputTest(w io.Writer, test *Test) {
 	now := getNow()
-	testName := additionalTestName + test.Name
+	testName := escape(additionalTestName + test.Name)
 	fmt.Fprintf(w, "##teamcity[testStarted timestamp='%s' name='%s' captureStandardOutput='true']\n", test.Start, testName)
 	fmt.Fprint(w, test.Output)
 	if test.Status == "SKIP" {
@@ -66,17 +69,17 @@ func outputTest(w io.Writer, test *Test) {
 	} else {
 		if test.Race {
 			fmt.Fprintf(w, "##teamcity[testFailed timestamp='%s' name='%s' message='Race detected!' details='%s']\n",
-				now, testName, escapeOutput(test.Details))
+				now, testName, escapeLines(test.Details))
 		} else {
 			switch test.Status {
 			case "FAIL":
 				fmt.Fprintf(w, "##teamcity[testFailed timestamp='%s' name='%s' details='%s']\n",
-					now, testName, escapeOutput(test.Details))
+					now, testName, escapeLines(test.Details))
 			case "PASS":
 				// ignore
 			default:
 				fmt.Fprintf(w, "##teamcity[testFailed timestamp='%s' name='%s' message='Test ended in panic.' details='%s']\n",
-					now, testName, escapeOutput(test.Details))
+					now, testName, escapeLines(test.Details))
 			}
 		}
 		fmt.Fprintf(w, "##teamcity[testFinished timestamp='%s' name='%s' duration='%d']\n",

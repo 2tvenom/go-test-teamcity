@@ -22,5 +22,19 @@ go test -v ./... | go-test-teamcity
 go test -v ./... | docker run -i xjewer/go-test-teamcity
 ```
 
+### Docker multi-stage build
+Extending Golang Dockerhub instructions to `Start a Go instance in your app`:
+https://hub.docker.com/_/golang
+
+> The most straightforward way to use this image is to use a Go container as both the build and runtime environment. In your Dockerfile, writing something along the lines of the following will compile and run your project:
+
+```Dockerfle
+
+...
+
+COPY --from=xjewer/go-test-teamcity /converter /usr/local/bin/go-test-teamcity
+RUN  go test -v ./... | go-test-teamcity
+```
+
 ### Links
 - https://confluence.jetbrains.com/display/TCD9/Build+Script+Interaction+with+TeamCity
